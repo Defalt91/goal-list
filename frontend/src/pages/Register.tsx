@@ -1,6 +1,11 @@
-import { ChangeEvent, FC, FormEvent, useState } from "react"
+import { ChangeEvent, FC, FormEvent, useEffect, useState } from "react"
 import { FaUser } from "react-icons/fa"
-import { IRegUser } from "../interfaces/auth"
+import { useNavigate } from "react-router-dom"
+import { toast } from "react-toastify"
+import { useAppDispatch, useAppSelector } from "../app/hooks"
+import Spinner from "../components/Spinner"
+import { IReduxSate, IRegUser } from "../interfaces/auth"
+import { register, reset } from "../redux/auth/authSlice"
 
 const Register: FC = () => {
 	const [formData, setFormData] = useState<IRegUser>({
@@ -10,12 +15,44 @@ const Register: FC = () => {
 		confirmPass: "",
 	})
 
+	const navigate = useNavigate()
+	const dispatch = useAppDispatch()
+
+	const { user, message, isLoading, isError, isSuccess } = useAppSelector((state: IReduxSate) => state.auth)
+
+	useEffect(() => {
+		if (isError) {
+			toast.error(message)
+
+			dispatch(reset())
+		}
+		if (isSuccess || user) {
+			navigate("/")
+		}
+	}, [user, isError, isSuccess, message, navigate, dispatch])
+
 	const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
 		setFormData({ ...formData, [event.target.name]: event.target.value })
 	}
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
+
+		if (formData.password !== formData.confirmPass) {
+			toast.error("Passwords do not match")
+		} else {
+			const userData = {
+				name: formData.name,
+				email: formData.email,
+				password: formData.password,
+			}
+
+			dispatch(register(userData))
+		}
+	}
+
+	if (isLoading) {
+		return <Spinner />
 	}
 
 	return (

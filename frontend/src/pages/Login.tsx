@@ -1,6 +1,11 @@
-import { ChangeEvent, FC, FormEvent, useState } from "react"
+import { ChangeEvent, FC, FormEvent, useEffect, useState } from "react"
 import { FaSignInAlt } from "react-icons/fa"
+import { useNavigate } from "react-router-dom"
+import { toast } from "react-toastify"
+import { useAppDispatch, useAppSelector } from "../app/hooks"
+import Spinner from "../components/Spinner"
 import { ILogUser } from "../interfaces/auth"
+import { login, reset } from "../redux/auth/authSlice"
 
 const Login: FC = () => {
 	const [formData, setFormData] = useState<ILogUser>({
@@ -8,12 +13,33 @@ const Login: FC = () => {
 		password: "",
 	})
 
+	const navigate = useNavigate()
+	const dispatch = useAppDispatch()
+	const { user, message, isLoading, isError, isSuccess } = useAppSelector((state) => state.auth)
+
+	useEffect(() => {
+		if (isError) {
+			toast.error(message)
+
+			dispatch(reset())
+		}
+		if (isSuccess || user) {
+			navigate("/")
+		}
+	}, [user, isError, isSuccess, message, navigate, dispatch])
+
 	const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
 		setFormData({ ...formData, [event.target.name]: event.target.value })
 	}
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
+
+		dispatch(login(formData))
+	}
+
+	if (isLoading) {
+		return <Spinner />
 	}
 
 	return (
